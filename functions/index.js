@@ -27,54 +27,34 @@ exports.sendNotification = functions.database.ref('/notifications/{user_id}/{not
 
 
     const userQuery = admin.database().ref(`Users/${from_user_id}/name`).once('value');
-    return userQuery.then(userResult => {
+    const deviceToken = admin.database().ref(`/Users/${user_id}/device_token`).once('value');
 
+    return Promise.all([userQuery, deviceToken]).then(result => {
 
-      const userName = userResult.val();
+      const userName = result[0].val();
+      const token_id = result[1].val();
 
+      const payload = {
+        notification : {
+          title : "New Friend Request",
+          body : `${userName} has sent you a request`,
+          icon : "default",
+          click_action : "com.dev.kallinikos.chatbat_TARGET_NOTIFICATION"
+        },
+        data : {
+          from_user_id : from_user_id
+        }
+      };
 
+      return admin.messaging().sendToDevice(token_id, payload).then(response => {
 
+        console.log('This was the notification Feature');
 
-
-          const deviceToken = admin.database().ref(`/Users/${user_id}/device_token`).once('value');
-
-          return deviceToken.then(result => {
-
-            const token_id = result.val();
-
-            const payload = {
-              notification : {
-                title : "New Friend Request",
-                body : `${userName} has sent you a request`,
-                icon : "default",
-                click_action : "com.dev.kallinikos.chatbat_TARGET_NOTIFICATION"
-              },
-              data : {
-                from_user_id : from_user_id
-              }
-            };
-
-            return admin.messaging().sendToDevice(token_id, payload).then(response => {
-
-              console.log('This was the notification Feature');
-
-            });
-
-
-          });
-
+      });
 
     });
 
-
-
-
   });
-
-
-
-
-
 
 });
 
